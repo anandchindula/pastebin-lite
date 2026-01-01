@@ -1,29 +1,27 @@
-import { notFound } from "next/navigation";
-import { store } from "@/app/lib/store";
-import { now } from "@/app/lib/time";
+async function getPaste(id: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/pastes/${id}`,
+    { cache: "no-store" }
+  );
 
-export default function PastePage({ params }: { params: { id: string } }) {
-  const paste = store.get(params.id);
-  if (!paste) notFound();
+  if (!res.ok) return null;
+  return res.json();
+}
 
-  const current = now();
+export default async function PastePage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const paste = await getPaste(params.id);
 
-  if (paste.expiresAt && current > paste.expiresAt) {
-    store.delete(params.id);
-    notFound();
+  if (!paste) {
+    return <h1>Paste not found</h1>;
   }
-
-  if (paste.maxViews !== null && paste.views >= paste.maxViews) {
-    store.delete(params.id);
-    notFound();
-  }
-
-  paste.views++;
 
   return (
-    <main style={{ padding: "2rem", fontFamily: "monospace" }}>
-      <h2>Paste</h2>
-      <pre>{paste.content}</pre>
-    </main>
+    <pre style={{ whiteSpace: "pre-wrap", padding: "1rem" }}>
+      {paste.content}
+    </pre>
   );
 }
