@@ -1,38 +1,30 @@
 import { NextResponse } from "next/server";
-import { store } from "@/app/lib/store";
-import { now } from "@/app/lib/time";
+import { store } from "../../../lib/store";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  ctx: { params: Promise<{ id: string }> }
 ) {
-  const paste = store.get(params.id);
+  const { id } = await ctx.params;
+
+  const paste = store.get(id);
+
   if (!paste) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Paste not found" },
+      { status: 404 }
+    );
   }
 
-  const current = now(req);
-
-  // TTL check
-  if (paste.expiresAt && current > paste.expiresAt) {
-    store.delete(params.id);
-    return NextResponse.json({ error: "Expired" }, { status: 404 });
+  // 🔴 Defensive fix (important)
+  if (typeof paste.views !== "number") {
+    paste.views = 0;
   }
 
-  // Max views check
-  if (paste.maxViews !== null && paste.views >= paste.maxViews) {
-    store.delete(params.id);
-    return NextResponse.json({ error: "View limit reached" }, { status: 404 });
-  }
-
-  paste.views++;
+  paste.views += 1;
 
   return NextResponse.json({
     content: paste.content,
-    remaining_views:
-      paste.maxViews === null ? null : paste.maxViews - paste.views,
-    expires_at: paste.expiresAt
-      ? new Date(paste.expiresAt).toISOString()
-      : null,
+    views: paste.views,
   });
 }

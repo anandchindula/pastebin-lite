@@ -1,7 +1,9 @@
-export const store =
-  (globalThis as any).__PASTE_STORE__ ??
-  new Map<string, any>();
+export type Paste = {
+  content: string;
+  createdAt: number;
+  expiresAt: number | null;
+  maxViews: number | null;
+  views: number;
+};
 
-(globalThis as any).__PASTE_STORE__ = store;
-
-console.log("🟢 STORE INSTANCE ID:", store);
+export const store = new Map<string, Paste>();
